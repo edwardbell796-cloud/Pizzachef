@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Cheff | Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Existing Styles Kept Exactly As Is */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { display: flex; background: #f4f7f6; min-height: 100vh; overflow-x: hidden; }
+    #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+    .login-card { background: white; padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .sidebar { width: 260px; background: #1a1a1a; color: white; display: flex; flex-direction: column; position: fixed; height: 100%; transition: 0.3s ease; z-index: 1000; }
+    .sidebar.hidden { transform: translateX(-260px); }
+    .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid #333; }
+    .logo-text { font-family: 'Dancing Script', cursive; color: #ff4d4d; font-size: 2.2rem; display: block; }
+    .chef-icon { font-size: 2rem; color: white; margin-bottom: 10px; animation: cook 2s infinite ease-in-out; display: inline-block; }
+    @keyframes cook { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg) translateY(-5px); } }
+    .nav-link { padding: 15px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.3s; color: #bbb; }
+    .nav-link:hover, .nav-link.active { background: #333; color: #ff4d4d; border-left: 4px solid #ff4d4d; }
+    .toggle-btn { position: fixed; top: 20px; left: 20px; z-index: 1100; background: #ff4d4d; color: white; border: none; padding: 10px 12px; border-radius: 5px; cursor: pointer; font-size: 1.2rem; }
+    .content { margin-left: 260px; padding: 80px 40px 40px 40px; width: 100%; transition: 0.3s ease; }
+    .content.full { margin-left: 0; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #eee; }
+    .input-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+    input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; margin-bottom: 5px; }
+    .btn { background: #ff4d4d; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
+    .btn:hover { background: #e04343; }
+    .search-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-input { flex: 2; }
+    .filter-select { flex: 1; }
+    .live-order-card, .menu-item-row { border-left: 5px solid #f39c12; padding: 15px; background: #fff; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .menu-item-row { border-left-color: #ff4d4d; }
+    .action-btns { display: flex; gap: 8px; }
+    .confirm-btn { background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .complete-btn { background: #27ae60; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .cancel-btn { background: #e67e22; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .delete-btn { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+    .reset-btn { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-top: 10px; }
+    .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+    .rev-box { padding: 20px; border-radius: 12px; color: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; background: #f9f9f9; padding: 15px; color: #888; font-size: 0.8rem; text-transform: uppercase; }
+    td { padding: 15px; border-bottom: 1px solid #f1f1f1; }
+    .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .status-confirmed { background: #e6ffed; color: #218838; }
+    .status-pending { background: #fff8e6; color: #b08900; }
+    .status-processing { background: #e1f5fe; color: #0288d1; }
+    .status-cancelled { background: #fee2e2; color: #b91c1c; }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-260px); }
+      .sidebar.active { transform: translateX(0); }
+      .content { margin-left: 0; padding: 80px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="chef-icon" style="color: #ff4d4d;"><i class="fas fa-utensils"></i></div>
+    <h2 style="font-family: 'Dancing Script', cursive; font-size: 2.5rem; color: #ff4d4d; margin-bottom: 20px;">Pizza Cheff</h2>
+    <input type="text" id="loginUser" placeholder="Admin Username">
+    <input type="password" id="loginPass" placeholder="Password">
+    <button class="btn" onclick="checkLogin()">Enter Dashboard</button>
+    <p id="errorMsg" style="color: red; margin-top: 15px; font-size: 0.8rem; display: none;">Invalid credentials.</p>
+  </div>
+</div>
+
+<button class="toggle-btn" id="menuToggle"><i class="fas fa-bars"></i></button>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="chef-icon"><i class="fas fa-utensils"></i></div>
+    <span class="logo-text">Pizza Cheff</span>
+  </div>
+  <div class="nav-link active" onclick="showTab('current-orders')"><i class="fas fa-clock"></i> Current Orders</div>
+  <div class="nav-link" onclick="showTab('add-menu')"><i class="fas fa-pizza-slice"></i> Add/Edit Menu</div>
+  <div class="nav-link" onclick="showTab('order-history')"><i class="fas fa-receipt"></i> Order History</div>
+  <div class="nav-link" onclick="showTab('settings')"><i class="fas fa-cog"></i> Settings</div>
+</div>
+
+<div class="content" id="mainContent">
+  <div id="current-orders" class="tab-content active">
+    <div class="card">
+      <h2>Live Management 🛵</h2>
+      <input type="text" id="searchLive" placeholder="Search Order ID or Customer..." onkeyup="renderLive()">
+      <div id="liveOrdersContainer"></div>
+    </div>
+  </div>
+
+  <div id="add-menu" class="tab-content">
+    <div class="card">
+      <h2>Upload to Menu 📦</h2>
+      <div class="input-group"><label>Item Name</label><input type="text" id="itemName"></div>
+      <div class="input-group"><label>Price (Rs)</label><input type="number" id="itemPrice"></div>
+      <div class="input-group"><label>Image URL</label><input type="text" id="itemImg"></div>
+      <div class="input-group">
+        <label>Category</label>
+        <select id="itemCat">
+          <option value="pizza">Pizza</option>
+          <option value="burger">Burger</option>
+          <option value="fastfood">Fast Food</option>
+          <option value="drinks">Drinks</option>
+        </select>
+      </div>
+      <button class="btn" id="addItemBtn">Publish to Website</button>
+    </div>
+
+    <div class="card">
+      <h2>Live Menu Items</h2>
+      <div class="search-row">
+        <input type="text" id="searchMenu" class="search-input" placeholder="Search menu..." onkeyup="renderMenuList()">
+        <select id="filterMenuCat" class="filter-select" onchange="renderMenuList()">
+          <option value="all">All Categories</option>
+          <option value="pizza">Pizza</option>
+          <option value="burger">Burger</option>
+          <option value="fastfood">Fast Food</option>
+          <option value="drinks">Drinks</option>
+        </select>
+      </div>
+      <div id="menuItemsContainer"></div>
+    </div>
+  </div>
+
+  <div id="order-history" class="tab-content">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <h2>Financial Analytics 📈</h2>
+        <button class="reset-btn" onclick="resetRevenue()"><i class="fas fa-sync-alt"></i> Reset Analytics</button>
+      </div>
+      <div class="rev-grid">
+        <div class="rev-box" style="background: #ff4d4d;"><p>All-Time Revenue</p><h2 id="totalRevenue">Rs 0</h2></div>
+        <div class="rev-box" style="background: #2c3e50;"><p>Monthly Revenue</p><h2 id="monthlyRevenue">Rs 0</h2></div>
+      </div>
+      <div class="search-row">
+        <input type="text" id="searchHistory" class="search-input" placeholder="Search History..." onkeyup="renderHistory()">
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Order ID</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="settings" class="tab-content">
+    <div class="card">
+      <h2>General Settings ⚙️</h2>
+      <div class="input-group">
+        <label>Admin WhatsApp Number</label>
+        <input type="text" id="setWhatsApp" placeholder="e.g. 923000000000">
+        <small style="color: #888;">Include country code, no symbols (e.g. 92 for Pakistan).</small>
+      </div>
+      <div class="input-group">
+        <label>Contact Email</label>
+        <input type="email" id="setEmail" placeholder="e.g. contact@pizzacheff.com">
+      </div>
+      <button class="btn" onclick="saveSettings()">Update Contact Info</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+  import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBq9W6hW_X5sc66r7kB6p8kMUq-17jgJ50",
+    authDomain: "pizza-cheff-92db6.firebaseapp.com",
+    projectId: "pizza-cheff-92db6",
+    databaseURL: "https://pizza-cheff-92db6-default-rtdb.firebaseio.com"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // Login Check
+  window.checkLogin = () => {
+    if(document.getElementById('loginUser').value === "admin" && document.getElementById('loginPass').value === "Asif123") {
+      document.getElementById('loginOverlay').style.display = "none";
+    } else { document.getElementById('errorMsg').style.display = "block"; }
+  };
+
+  // Tab Switcher
+  window.showTab = (tabId) => {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    const links = document.querySelectorAll('.nav-link');
+    links.forEach(link => { if(link.innerText.toLowerCase().includes(tabId.replace('-',' '))) link.classList.add('active'); });
+    if(window.innerWidth < 768) document.getElementById('sidebar').classList.remove('active');
+  };
+
+  document.getElementById('menuToggle').onclick = () => {
+    const sb = document.getElementById('sidebar');
+    if(window.innerWidth > 768) {
+      sb.classList.toggle('hidden');
+      document.getElementById('mainContent').classList.toggle('full');
+    } else { sb.classList.toggle('active'); }
+  };
+
+  // Settings Logic
+  onValue(ref(database, 'settings/contact'), (snap) => {
+    const data = snap.val();
+    if(data) {
+      document.getElementById('setWhatsApp').value = data.whatsapp || "";
+      document.getElementById('setEmail').value = data.email || "";
+    }
+  });
+
+  window.saveSettings = () => {
+    const whatsapp = document.getElementById('setWhatsApp').value.trim();
+    const email = document.getElementById('setEmail').value.trim();
+    if(whatsapp) {
+      set(ref(database, 'settings/contact'), { whatsapp, email })
+      .then(() => alert("Settings Updated Successfully!"));
+    } else { alert("WhatsApp number is required."); }
+  };
+
+  // Menu Logic (Kept Same)
+  document.getElementById('addItemBtn').onclick = () => {
+    const name = document.getElementById('itemName').value;
+    const price = document.getElementById('itemPrice').value;
+    const category = document.getElementById('itemCat').value;
+    if(name && price) {
+      set(push(ref(database, 'menu/')), {
+        name, price: parseInt(price), category, image: document.getElementById('itemImg').value || "https://via.placeholder.com/150"
+      }).then(() => {
+        alert("Item Added!");
+        document.querySelectorAll('#add-menu input').forEach(i => i.value = '');
+      });
+    }
+  };
+
+  onValue(ref(database, 'menu/'), (snap) => {
+    window.menuData = snap.val();
+    renderMenuList();
+  });
+
+  window.renderMenuList = () => {
+    const container = document.getElementById('menuItemsContainer');
+    const search = document.getElementById('searchMenu').value.toLowerCase();
+    const filter = document.getElementById('filterMenuCat').value;
+    container.innerHTML = "";
+    if (window.menuData) {
+      Object.keys(window.menuData).forEach(id => {
+        const item = window.menuData[id];
+        if ((filter === "all" || item.category === filter) && item.name.toLowerCase().includes(search)) {
+          container.innerHTML += `<div class="menu-item-row">
+            <div><strong>${item.name}</strong> - Rs ${item.price} (${item.category})</div>
+            <button class="delete-btn" onclick="deleteItem('${id}')"><i class="fas fa-trash"></i></button>
+          </div>`;
+        }
+      });
+    }
+  };
+
+  window.deleteItem = (id) => { if(confirm("Delete this item?")) remove(ref(database, 'menu/' + id)); };
+
+  // Orders & History (Kept Same)
+  onValue(ref(database, 'orders/'), (snap) => {
+    window.orderData = snap.val();
+    renderLive();
+    renderHistory();
+  });
+
+  window.renderLive = () => {
+    const container = document.getElementById('liveOrdersContainer');
+    const search = document.getElementById('searchLive').value.toLowerCase();
+    container.innerHTML = "";
+    if (window.orderData) {
+      Object.keys(window.orderData).reverse().forEach(id => {
+        const o = window.orderData[id];
+        if ((o.status === "pending" || o.status === "processing") && 
+            (id.toLowerCase().includes(search) || (o.customerName || "").toLowerCase().includes(search))) {
+          container.innerHTML += `<div class="live-order-card">
+            <div>
+              <h4>ID: ${id}</h4>
+              <p>User: ${o.customerName || "N/A"}</p>
+              <span class="status-badge status-${o.status}">${o.status}</span>
+            </div>
+            <div class="action-btns">
+              ${o.status === "pending" ? `<button class="confirm-btn" onclick="upStat('${id}', 'processing')">Confirm Payment</button>` : ''}
+              ${o.status === "processing" ? `<button class="complete-btn" onclick="upStat('${id}', 'confirmed')">Order Completed</button>` : ''}
+              <button class="cancel-btn" onclick="upStat('${id}', 'cancelled')">Cancel Order</button>
+            </div>
+          </div>`;
+        }
+      });
+    }
+  };
+
+  window.renderHistory = () => {
+    const body = document.getElementById('historyBody');
+    const search = document.getElementById('searchHistory').value.toLowerCase();
+    let revAll = 0, revMon = 0;
+    const now = new Date();
+    body.innerHTML = "";
+    if (window.orderData) {
+      Object.keys(window.orderData).reverse().forEach(id => {
+        const o = window.orderData[id];
+        const date = id.includes("ORD-") ? new Date(parseInt(id.replace("ORD-", ""))) : new Date();
+        const orderTotal = parseFloat(o.total) || 0;
+        if(o.status === "confirmed") {
+          revAll += orderTotal;
+          if(date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) revMon += orderTotal;
+        }
+        if(id.toLowerCase().includes(search) || date.toLocaleDateString().includes(search)) {
+          body.innerHTML += `<tr>
+            <td>${date.toLocaleDateString()}</td>
+            <td style="font-size: 0.7rem;">${id}</td>
+            <td>Rs ${orderTotal}</td>
+            <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+          </tr>`;
+        }
+      });
+      document.getElementById('totalRevenue').innerText = "Rs " + revAll.toFixed(0);
+      document.getElementById('monthlyRevenue').innerText = "Rs " + revMon.toFixed(0);
+    }
+  };
+
+  window.upStat = (id, s) => {
+    if(s === 'cancelled' && !confirm("Are you sure?")) return;
+    update(ref(database, 'orders/' + id), { status: s });
+  };
+
+  window.resetRevenue = () => {
+    const pass = prompt("Enter password to reset revenue to zero:");
+    if(pass === "edd4321") {
+      if(confirm("This will permanently clear all order history. Proceed?")) {
+        remove(ref(database, 'orders/')).then(() => alert("Revenue data reset successfully."));
+      }
+    } else { alert("Incorrect password."); }
+  };
+</script>
+</body>
+</html>
